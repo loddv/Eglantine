@@ -35,6 +35,7 @@ on:
         required: false
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
@@ -89,7 +90,22 @@ jobs:
           shopt -s nullglob
           strip_sha() { sed "s/-${SHA}//" <<< "$1"; }
           artifacts=(artifacts/*/)
-          ((${#artifacts[@]} > 0)) || { echo "No build artifacts were downloaded" >&2; exit 1; }
+          if ((${#artifacts[@]} == 0)); then
+            # A single matching artifact is extracted directly into the download path.
+            artifact_name=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" |
+              jq -r --arg suffix "-$SHA" \
+                '[.artifacts[]?.name | select(startswith("eglantine-") and endswith($suffix))] |
+                 if length == 1 then .[0] else empty end')
+            [[ "$artifact_name" == eglantine-*-"$SHA" && "$artifact_name" != */* ]] || {
+              echo "Could not identify the single downloaded artifact" >&2
+              exit 1
+            }
+            mapfile -d '' root_files < <(find artifacts -mindepth 1 -maxdepth 1 -print0)
+            ((${#root_files[@]} > 0)) || { echo "No build artifacts were downloaded" >&2; exit 1; }
+            mkdir "artifacts/$artifact_name"
+            mv -- "${root_files[@]}" "artifacts/$artifact_name/"
+            artifacts=(artifacts/*/)
+          fi
           for artifact in "${artifacts[@]}"; do
             name=$(basename "$artifact")
             appimages=("$artifact"*.AppImage)
