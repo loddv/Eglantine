@@ -1,0 +1,88 @@
+name: build-android
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        type: string
+        required: true
+      refspec:
+        type: string
+        required: true
+      tag:
+        type: string
+        required: true
+      release:
+        type: boolean
+        default: false
+      nightly:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: android-arm64-debug
+    runs-on: ubuntu-24.04
+    env:
+      GIT_TAG_NAME: ${{ inputs.tag }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - name: Write SCM metadata
+        shell: bash
+        env:
+          SCM_SHA: ${{ inputs.sha }}
+          SCM_REFSPEC: ${{ inputs.refspec }}
+          SCM_TAG: ${{ inputs.tag }}
+          SCM_RELEASE: ${{ inputs.release }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$SCM_SHA" > GIT-COMMIT
+          printf '%s\n' "$SCM_REFSPEC" > GIT-REFSPEC
+          printf '%s\n' "$SCM_TAG" > GIT-TAG
+          if [ "$SCM_RELEASE" = true ]; then
+            printf '%s\n' "$SCM_TAG" > GIT-RELEASE
+          else
+            rm -f GIT-RELEASE
+          fi
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          sdkmanager "platforms;android-36" "ndk;28.2.13676358" "cmake;3.31.5"
+
+      - name: Build debug APK
+        shell: bash
+        working-directory: src/android
+        run: |
+          set -euo pipefail
+          ./gradlew assembleMainlineDebug \
+            -PYUZU_ANDROID_ARGS="-DENABLE_UPDATE_CHECKER=OFF -DNIGHTLY_BUILD=${{ inputs.nightly && 'ON' || 'OFF' }}"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: eglantine-android-arm64-debug-${{ inputs.sha }}
+          path: src/android/app/build/outputs/apk/mainline/debug/app-mainline-debug.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
