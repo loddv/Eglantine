@@ -1,0 +1,92 @@
+name: build-android
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        type: string
+        required: true
+      refspec:
+        type: string
+        required: true
+      tag:
+        type: string
+        required: true
+      release:
+        type: boolean
+        default: false
+      nightly:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: android-arm64-debug
+    runs-on: ubuntu-24.04
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 1000M
+      GIT_TAG_NAME: ${{ inputs.tag }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - name: Setup build from checked-out source
+        if: hashFiles('.github/actions/setup-build/action.yml') != ''
+        uses: ./.github/actions/setup-build
+        with:
+          platform: android-arm64-debug
+          sha: ${{ inputs.sha }}
+          refspec: ${{ inputs.refspec }}
+          tag: ${{ inputs.tag }}
+          release: ${{ inputs.release }}
+
+      - name: Setup build from compatibility pin
+        if: hashFiles('.github/actions/setup-build/action.yml') == ''
+        uses: Djihads80/Eglantine/.github/actions/setup-build@583b125d5a2a330bc3e04fed213b908db5f6a8f2
+        with:
+          platform: android-arm64-debug
+          sha: ${{ inputs.sha }}
+          refspec: ${{ inputs.refspec }}
+          tag: ${{ inputs.tag }}
+          release: ${{ inputs.release }}
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ccache ninja-build
+          sdkmanager "platforms;android-36" "ndk;28.2.13676358" "cmake;3.31.5"
+
+      - name: Build debug APK
+        shell: bash
+        working-directory: src/android
+        run: |
+          set -euo pipefail
+          ./gradlew assembleMainlineDebug \
+            -PYUZU_ANDROID_ARGS="-DUSE_CCACHE=ON -DENABLE_UPDATE_CHECKER=OFF -DNIGHTLY_BUILD=${{ inputs.nightly && 'ON' || 'OFF' }}"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: eglantine-android-arm64-debug-${{ inputs.sha }}
+          path: src/android/app/build/outputs/apk/mainline/debug/app-mainline-debug.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7

@@ -54,8 +54,8 @@ The CI duplicate check refuses to publish a tag that already exists. It does **n
 Open Actions → `ci` → Run workflow. Select the branch to build and choose:
 
 - **kind**: `branch` for a test build, or `daily` for a forced daily build of `nx2` only.
-- **platforms**: `all`, `linux`, `windows`, or `macos`. A single-platform run produces a partial release with only that platform's assets.
-- **pgo**: `none` or `both`. For manual runs, `none` is the default. `both` adds PGO variants where supported (Linux x86_64/ARM64 and Windows MinGW); macOS has no PGO variant.
+- **platforms**: select any combination of the Linux, Windows, macOS and Android checkboxes. A partial selection produces a release with only those platforms' assets; select at least one when publishing.
+- **pgo**: `none`, `both`, or `only`. For manual runs, `none` is the default. `both` adds PGO variants where supported (Linux x86_64/ARM64 and Windows MinGW), while `only` omits their standard variants; macOS and Android have no PGO variant.
 - **publish**: enabled by default. Disable it to keep the build as workflow artifacts without creating/updating a GitHub release.
 
 For automatic `nx2` version releases and scheduled daily builds, the workflow requests both PGO variants by default. Label-triggered PR builds default to non-PGO to keep test builds quicker.
@@ -82,8 +82,9 @@ Both the scheme-preparation job and the publishing job check out CI helper scrip
 | Linux aarch64       | AppImage and `.tar.gz`       | AppImage and `.tar.gz` |
 | Windows x86_64      | MSVC `.zip`                  | MinGW/clang `.zip`     |
 | macOS Apple Silicon | App bundle `.zip` and `.dmg` | Not built              |
+| Android ARM64       | Mainline debug `.apk`        | Not built              |
 
-The existing build steps use the repository's current CMake targets (`yuzu` and `yuzu-cmd`) and package the produced `eglantine` and `eden-cli` binaries. Linux AppImages require glibc 2.39 or newer. Linux tarballs use system Qt and other shared libraries. Windows archives contain the deployed runtime dependencies. macOS artifacts are ad-hoc signed, not notarized; Gatekeeper may require the user to approve the app on first launch.
+The desktop build steps use the repository's current CMake targets (`yuzu` and `yuzu-cmd`) and package the produced `eglantine` and `eden-cli` binaries. Linux AppImages require glibc 2.39 or newer. Linux tarballs use system Qt and other shared libraries. Windows archives contain the deployed runtime dependencies. macOS artifacts are ad-hoc signed, not notarized; Gatekeeper may require the user to approve the app on first launch. The Android debug APK uses the project's debug signing key and is not suitable for Play Store distribution.
 
 Build artifacts are retained for seven days. Published GitHub Release assets remain available until a release is deleted. Daily releases are pruned to approximately the seven most recent; branch releases are rolling and are cleaned up when no longer needed.
 

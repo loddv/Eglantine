@@ -44,6 +44,11 @@ Eden by default will be cloned into:
 
 Remember to have a Java SDK installed if not already, on Debian and similar this is done with `sudo apt install openjdk-17-jdk`.
 
+The GitHub Actions CI workflow also builds the mainline ARM64 debug APK. When running it
+manually, use the Android checkbox to include or skip the APK; the other platform checkboxes
+control their respective builds. The APK is available as a workflow artifact and, when publishing
+is enabled, as a release asset. It is signed with the project's debug key, not a Play Store key.
+
 ### Script
 
 A convenience script for building is provided in `.ci/android/build.sh`. On Windows, this must be run in Git Bash or MSYS2. This script provides the following options:
