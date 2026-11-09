@@ -37,25 +37,23 @@ jobs:
           ref: ${{ inputs.sha }}
           persist-credentials: false
 
-      - name: Setup build from checked-out source
-        if: hashFiles('.github/actions/setup-build/action.yml') != ''
-        uses: ./.github/actions/setup-build
-        with:
-          platform: android-arm64-debug
-          sha: ${{ inputs.sha }}
-          refspec: ${{ inputs.refspec }}
-          tag: ${{ inputs.tag }}
-          release: ${{ inputs.release }}
-
-      - name: Setup build from compatibility pin
-        if: hashFiles('.github/actions/setup-build/action.yml') == ''
-        uses: Djihads80/Eglantine/.github/actions/setup-build@583b125d5a2a330bc3e04fed213b908db5f6a8f2
-        with:
-          platform: android-arm64-debug
-          sha: ${{ inputs.sha }}
-          refspec: ${{ inputs.refspec }}
-          tag: ${{ inputs.tag }}
-          release: ${{ inputs.release }}
+      - name: Write SCM metadata
+        shell: bash
+        env:
+          SCM_SHA: ${{ inputs.sha }}
+          SCM_REFSPEC: ${{ inputs.refspec }}
+          SCM_TAG: ${{ inputs.tag }}
+          SCM_RELEASE: ${{ inputs.release }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$SCM_SHA" > GIT-COMMIT
+          printf '%s\n' "$SCM_REFSPEC" > GIT-REFSPEC
+          printf '%s\n' "$SCM_TAG" > GIT-TAG
+          if [ "$SCM_RELEASE" = true ]; then
+            printf '%s\n' "$SCM_TAG" > GIT-RELEASE
+          else
+            rm -f GIT-RELEASE
+          fi
 
       - name: Install Java
         uses: actions/setup-java@v5
