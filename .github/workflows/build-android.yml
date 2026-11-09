@@ -27,8 +27,6 @@ jobs:
     name: android-arm64-debug
     runs-on: ubuntu-24.04
     env:
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 1000M
       GIT_TAG_NAME: ${{ inputs.tag }}
     steps:
       - name: Check out source
@@ -69,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ccache ninja-build
+          sudo apt-get install -y --no-install-recommends ninja-build
           sdkmanager "platforms;android-36" "ndk;28.2.13676358" "cmake;3.31.5"
 
       - name: Build debug APK
@@ -78,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew assembleMainlineDebug \
-            -PYUZU_ANDROID_ARGS="-DUSE_CCACHE=ON -DENABLE_UPDATE_CHECKER=OFF -DNIGHTLY_BUILD=${{ inputs.nightly && 'ON' || 'OFF' }}"
+            -PYUZU_ANDROID_ARGS="-DENABLE_UPDATE_CHECKER=OFF -DNIGHTLY_BUILD=${{ inputs.nightly && 'ON' || 'OFF' }}"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
