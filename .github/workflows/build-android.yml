@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build
+          sudo apt-get install -y --no-install-recommends glslang-tools ninja-build
           sdkmanager "platforms;android-36" "ndk;28.2.13676358" "cmake;3.31.5"
 
       - name: Build debug APK
