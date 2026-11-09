@@ -2,8 +2,6 @@
 
 Read and follow the AI policy found in `docs/policies/AI.md`, and the coding policies found in `docs/policies/Coding.md`.
 
-Under no circumstances should you submit PRs or commits on behalf of the user, unless initiated through the official GitHub Agents tool.
-
 Keep comments to a reasonable level. Do not overexplain or add/remove comments from unrelated parts of the codebase.
 
 ## Switch 2 (NX2) work
