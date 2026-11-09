@@ -94,6 +94,11 @@ EOF2
     printf '\n'
   fi
 
+  android_apk=$(link 'Debug APK' eglantine-android-arm64-debug.apk)
+  if [[ -n "$android_apk" ]]; then
+    printf '## Android\n\nARM64: %s (debug build, signed with the debug key).\n\n' "$android_apk"
+  fi
+
   if [[ -n "$x_pgo$a_pgo$w_pgo" ]]; then
     echo "The PGO builds are the same programs compiled with profile-guided optimization (clang plus Eglantine's profile); prefer them when your CPU supports it."
   fi

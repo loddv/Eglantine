@@ -94,7 +94,12 @@ jobs:
             name=$(basename "$artifact")
             appimages=("$artifact"*.AppImage)
             mac_zips=("$artifact"*.zip)
-            if ((${#appimages[@]} > 0)); then
+            apks=("$artifact"*.apk)
+            if ((${#apks[@]} > 0)); then
+              # Android: publish the APK directly with a stable release asset name.
+              ((${#apks[@]} == 1)) || { echo "Expected one APK in $name" >&2; exit 1; }
+              cp "${apks[0]}" "release-assets/$(strip_sha "$name").apk"
+            elif ((${#appimages[@]} > 0)); then
               # Linux: ship the AppImage and tar.gz as they are.
               for file in "${appimages[@]}" "$artifact"*.tar.gz; do
                 [[ -f "$file" ]] || continue
